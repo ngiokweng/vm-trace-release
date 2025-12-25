@@ -1,36 +1,17 @@
 # 如何开始我们的trace之旅
 
-demo测试包已经发布,在demo文件夹下 有配套的js和apk包
-
-tracehelp.zip是辅助的面具模块，一定要刷入
-
-test.so是trace的本体
-
-‍
-
-‍
-
 # 注意事项
 
-本trace目前仅支持了arm64架构，在一些老的机型上走的是arm32，是无法trace的，后面会优先支持
+本trace目前仅支持了arm64架构，在一些老的机型上走的是arm32，是无法trace的，后面会优先支持\
 
-如果本仓库🌟破了800，将会开源ios的qdbi trace，现在已经开发并测试成功
-
-‍
-
-‍
+- 2025.12.25更新，不再依赖面具模块刷入读取内存，支持安卓14+系统
+- 签名发生变化 vm_call 改为qbdi_vm_call  
 
 # 从零开始使用这个trace
 
 ## 前戏准备
 
-这一步顾名思义就是准备环境
-
-首先你要有一台系统在安卓14以下的设备，群友实测安卓14不可以
-
-第二步刷入面具模块（支持Magisk，Kernelsu、Aptach）等各种，可以解包看一下原理，没干啥东西
-
-第三步关闭 selinux
+关闭 selinux
 
 ```bash
 adb shell
@@ -38,11 +19,7 @@ su
 setenforce 0
 ```
 
-第四步推送test.so到/data/local/tmp
-
-‍
-
-‍
+推送test.so到/data/local/tmp‍
 
 ## 开始trace
 
@@ -56,15 +33,15 @@ xiaoyuan带着msao（见文章），我们可以使用spwan使用过掉msao的�
 
 然后在attach注入
 
-​`frida -U -f com.fenbi.android.leo -l /Users/mac/Documents/androidtools/bypassmsao.js`​
+`frida -U -f com.fenbi.android.leo -l /Users/mac/Documents/androidtools/bypassmsao.js`​
 
 ‍
 
-​![CleanShot_2025_02_10_at_21_36_32](assets/CleanShot_2025_02_10_at_21_36_32-20250210213636-i0s8hga.png)​
+![CleanShot_2025_02_10_at_21_36_32](assets/CleanShot_2025_02_10_at_21_36_32-20250210213636-i0s8hga.png)​
 
 在这个状态下粘贴demo/xiaoyuan/xiaoyuan.js进到shell里
 
-​![CleanShot_2025_02_10_at_21_37_18](assets/CleanShot_2025_02_10_at_21_37_18-20250210213723-u6vm9r4.png)​
+![CleanShot_2025_02_10_at_21_37_18](assets/CleanShot_2025_02_10_at_21_37_18-20250210213723-u6vm9r4.png)​
 
 然后按回车就可以了
 
@@ -72,7 +49,7 @@ xiaoyuan带着msao（见文章），我们可以使用spwan使用过掉msao的�
 
 如果遇到了这个报错
 
-​![CleanShot_2025_02_10_at_21_38_09](assets/CleanShot_2025_02_10_at_21_38_09-20250210213817-du7l29p.png)​
+![CleanShot_2025_02_10_at_21_38_09](assets/CleanShot_2025_02_10_at_21_38_09-20250210213817-du7l29p.png)​
 
 首先你需要检查是否setenfore 0这个命令是否运行，因为selinux不关闭无法注入/data/local/tmp目录下的东西
 
@@ -90,29 +67,21 @@ var  handle = dlopen(soPathPtr, 2);
 
 你可以在这里找到注入逻辑手动注入so到app进程中
 
-​![CleanShot_2025_02_10_at_21_40_49](assets/CleanShot_2025_02_10_at_21_40_49-20250210214059-cjstf15.png)​
+![CleanShot_2025_02_10_at_21_40_49](assets/CleanShot_2025_02_10_at_21_40_49-20250210214059-cjstf15.png)​
 
-如果正常注入的话，你可以通过输入handle拿到注入so的数值
-
-‍
+如果正常注入的话，你可以通过输入handle拿到注入so的数值‍
 
 在一切注入无误后 我们可以主动调用
 
-​![CleanShot_2025_02_10_at_21_41_38](assets/CleanShot_2025_02_10_at_21_41_38-20250210214156-5duv42c.png)​
-
-‍
+![CleanShot_2025_02_10_at_21_41_38](assets/CleanShot_2025_02_10_at_21_41_38-20250210214156-5duv42c.png)​
 
 在出现结果以后建议立马按ctrl+D 退出
 
-​![CleanShot_2025_02_10_at_21_42_12](assets/CleanShot_2025_02_10_at_21_42_12-20250210214234-gi1xzo3.png)​
-
-‍
+![CleanShot_2025_02_10_at_21_42_12](assets/CleanShot_2025_02_10_at_21_42_12-20250210214234-gi1xzo3.png)​
 
 为什么要退出？ 因为其他接口也会调用到这个函数逻辑里，如果不退出可能会出现log.log的内容和你frida打印不一致的情况
 
 就没有什么别的好方法了吗？ 有，让我们来看spwan注入方法
-
-‍
 
 ### spwan注入方法 感谢D_Z66666大佬帮忙共同完成
 
@@ -193,7 +162,7 @@ function hook_soload() {
     var  soPathPtr = Memory.allocUtf8String(soPath);
     var handle = dlopen(soPathPtr, 2);
     console.log(handle);
-    vmtraceAddr = Module.findExportByName("test.so", 'vm_call');
+    vmtraceAddr = Module.findExportByName("test.so", 'qbdi_vm_call');
     vmtrace = new NativeFunction(vmtraceAddr, 'pointer', ['pointer', 'pointer', 'uint32', 'pointer', 'uint32']);
 
     var isinit = 0;
@@ -250,31 +219,9 @@ Interceptor.flush();
 
 # 常见问题
 
-‍
-
-## 我是否可以使用其他方法注入？
-
-答：可以 xposed 还有zygisk等支持
-
-也可以使用我的项目：
-
-https://github.com/jiqiu2022/Zygisk-MyInjector/blob/main/module/src/main/cpp/hack.cpp
-
-我在早期都是使用这个项目注入的
-
-但是需要注释掉
-
-​![CleanShot_2025_02_10_at_21_51_32](assets/CleanShot_2025_02_10_at_21_51_32-20250210215149-pfn7kly.png)​
-
-因为隐藏了以后就找不到了\
-
-如果你使用非frida注入，可以无视掉每次开机的关闭selinux流程
-
-‍
-
 ## Error: expected a pointer
 
-​![CleanShot_2025_02_10_at_21_38_09](assets/CleanShot_2025_02_10_at_21_38_09-20250210213817-du7l29p.png)​
+![CleanShot_2025_02_10_at_21_38_09](assets/CleanShot_2025_02_10_at_21_38_09-20250210213817-du7l29p.png)​
 
 首先你需要检查是否setenfore 0这个命令是否运行，因为selinux不关闭无法注入/data/local/tmp目录下的东西
 
@@ -283,29 +230,3 @@ https://github.com/jiqiu2022/Zygisk-MyInjector/blob/main/module/src/main/cpp/hac
 至于为什么是data/local/tmp 因为所有app都对这个目录有可读权限
 
 ‍
-
-## [debug] Failed to open /proc/self/mem
-
-​![image](https://qiude1tuchuang.oss-cn-beijing.aliyuncs.com/blog/20250210215346.png)​
-
-检查系统是否在安卓14以下
-
-检查面具模块是否刷入
-
-‍
-
-## Error :access violation accessing 0x0
-
-​![image](https://qiude1tuchuang.oss-cn-beijing.aliyuncs.com/blog/20250210215427.png)​
-
-检查参数数量等是否传入正确
-
-最后一个参数保证是6 或者0
-
-‍
-
-## 参数一定要正确
-
-感谢群友提供的图 ！
-
-​![image](https://qiude1tuchuang.oss-cn-beijing.aliyuncs.com/blog/20250210215551.png)​
